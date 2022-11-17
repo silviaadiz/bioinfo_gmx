@@ -1,0 +1,45 @@
+baseURL: /
+languageCode: en-us
+DefaultContentLanguage: es
+title: Genomics & Bioinformatics Repository
+theme: hugo-theme-docdock
+pygmentsCodeFences: yes
+pygmentsStyle: monokailight
+defaultContentLanguage: en
+defaultContentLanguageInSubdir: no
+enableMissingTranslationPlaceholders: no
+markup:
+  goldmark:
+    renderer:
+      unsafe: yes
+params:
+  disableHomeIcon: no
+  disableNavChevron: no
+  disableSearch: no
+  editURL: https://github.com/vjeantet/hugo-theme-docdock/edit/master/exampleSite/content/
+  enableGitInfo: yes
+  highlightClientSide: no
+  menushortcutsnewtab: no
+  ordersectionsby: weight
+  showVisitedLinks: yes
+  themeStyle: flex
+  themeVariant: ''
+  AuthorName: "Silvia Diz"
+  GitHubUser: "silviaadiz"
+outputs:
+  home:
+    - HTML
+    - RSS
+    - JSON
+menu:
+
+  shortcuts:
+    - pre: <h3>More</h3>
+      name: <i class='fa fa-github'></i> <label>Github repo</label>
+      identifier: ds
+      url: 'https://github.com/silviaadiz'
+      weight: 10
+    - name: <i class='fa fa-envelope-open'></i> <label>Contact info</label>
+      url: content/contactinfo.md
+      weight: 10
+
