@@ -1,7 +1,7 @@
 baseURL: /
 languageCode: en-us
 DefaultContentLanguage: es
-title: Genomics & Bioinformatics Repository
+title: Genomics & Bioinformatics Salad
 theme: hugo-theme-docdock
 pygmentsCodeFences: yes
 pygmentsStyle: monokailight
