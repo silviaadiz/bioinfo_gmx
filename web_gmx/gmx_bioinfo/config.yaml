@@ -40,6 +40,6 @@ menu:
       url: 'https://github.com/silviaadiz'
       weight: 10
     - name: <i class='fa fa-envelope-open'></i> <label>Contact info</label>
-      url: content/contactinfo.md
+      url: 'contactinfo'
       weight: 10
 
