@@ -1,0 +1,93 @@
+---
+description: ""
+title: Best practices for data QC
+weight: 2
+type: page
+output: html_document
+---
+
+
+
+<p>Let’s prep your data!</p>
+<p>{{%panel%}} I am assuming you are familiar with PLINK files and options. Otherwise, check the PLINK 1.9 <a href="https://www.cog-genomics.org/plink/1.9/input">documentation</a>. Plink version <strong>1.9</strong> is the one you must use for this code. Be careful with this! {{%/panel%}}</p>
+<p>The data QC is <strong>essential</strong> for almost every analysis, for both the genotype data and phenotypic data. For the latter, functions and code snippets that may be helpful are provided at the end of this <em>tutorial</em>, along with some tips and a to-check list, but this will not be covered in depth.</p>
+<p>A full revised pipeline for genotype data QC cooked by Dr Raquel Cruz is presented in here, but it should be noted that although these are the main steps we have used for our GWASs, they may not be enough for your data. Some resources for you to check are <a href="https://onlinelibrary.wiley.com/doi/10.1002/gepi.20516">Laurie et al, 2010.</a>; the <a href="https://biobank.ctsu.ox.ac.uk/crystal/crystal/docs/genotyping_qc.pdf">UK Biobank QC document</a> or the 1M Veteran Program QC paper by <a href="https://www.cell.com/ajhg/fulltext/S0002-9297(20)30080-X">Hunter-Zinck et al, 2020</a>.</p>
+<div id="first-round" class="section level2">
+<h2>First round</h2>
+<p>First of all, it is really important to explore the strengths and pitfalls of your genotyping technology and to get used to the array. For example, it is possible that some of the markers have a low genotyping quality most of the times and you may prefer to exclude them beforehand. It is not unsual for the technology to come with a specific software for this purpose, but don’t discard manual-checking as well.</p>
+<ol style="list-style-type: decimal">
+<li>Select the autosomes (we’ll come back to the X later). The input is not necessarily a tfile -for other input files check the Plink doc. In this step we remove those samples (a .txt file with FID and IID columns) and markers (.txt with marker names as rows) that we previously identified as problematic with the genotyping software.</li>
+</ol>
+<pre><code>  --tfile ./data
+  --chr 1-22 
+  --make-bed  --out ./data_1_22</code></pre>
+<ol start="2" style="list-style-type: decimal">
+<li>Select the SNPs (MAF &gt; 0.05):</li>
+</ol>
+<pre><code>  --tfile ./data_1_22
+  --maf 0.05  
+  --make-bed  --out ./snps_1_22</code></pre>
+<ol start="3" style="list-style-type: decimal">
+<li>Check heterozygosity and per-sample and per-SNP missing rate:</li>
+</ol>
+<pre><code>  --tfile ./snps_1_22
+  --missing  
+  --het 
+  --make-bed  --out ./snps_1_22_miss_het</code></pre>
+<ol start="4" style="list-style-type: decimal">
+<li>Explore <strong>in R</strong> the .het and .imiss files:</li>
+</ol>
+<pre class="r"><code># Open the het file
+het &lt;- read.table(&quot;snps_1_22_miss_het.het&quot;, head=TRUE)
+het$HET_RATE = (het$&quot;N.NM.&quot; - het$&quot;O.HOM.&quot;)/het$&quot;N.NM.&quot;
+hist(het$HET_RATE, xlab=&quot;Heterozygosity Rate&quot;, 
+ylab=&quot;Frequency&quot;, main= &quot;Heterozygosity Rate&quot;)
+
+# Select the individuals that deviate more than 
+# 3 s.d. from the mean heterozygosity
+
+het_fail = subset(het, 
+(het$HET_RATE &lt; mean(het$HET_RATE)-3*sd(het$HET_RATE)) |
+(het$HET_RATE &gt; mean(het$HET_RATE)+3*sd(het$HET_RATE)));
+
+# Open the per-individual missing file
+
+indmiss&lt;-read.table(file=&quot;snps_1_22_miss_het.imiss&quot;, header=TRUE)
+hist(indmiss[,6],main=&quot;Histogram individual missingness&quot;)
+
+# Merge the het and indmiss files to explore the samples
+
+exploro&lt;-merge(het, indmiss, by=&#39;IID&#39;)
+plot(exploro$F_MISS, exploro$HET_RATE, data=exploro, col=&quot;BLUE&quot;, xlim=c(0,0.05),
+     ylim=c(0.2,0.5), pch=20, xlab=&quot;Proportion of missing genotypes&quot;, 
+     ylab=&quot;Heterozygosity rate&quot;, axes=F)
+abline(h=mean(HET_RATE) - (3*sd(HET_RATE)), col=&quot;RED&quot;, lty=2)
+abline(h=mean(HET_RATE) + (3*sd(HET_RATE)), col=&quot;RED&quot;, lty=2)
+abline(v=0.02, col=&quot;RED&quot;, lty=2)
+abline(v=0.03, col=&quot;RED&quot;, lty=2)
+
+
+# Which threshold for sample missigness 
+# should we use to remove the worst samples?
+
+# Define subset of individuals with excesive or 
+# low heterozygosity, and export it 
+
+quitar_het = subset(exploro, exploro$F_MISS&lt;0.02 &amp; ((het$HET_RATE &lt; mean(het$HET_RATE)-3*sd(het$HET_RATE))|(het$HET_RATE &gt; mean(het$HET_RATE)+3*sd(het$HET_RATE))));
+
+eliminar_het&lt;-quitar_het[,c(1:2)]
+names(eliminar_het)&lt;-c(&quot;FID&quot;,&quot;IID&quot;)
+write.table(eliminar_het, &quot;remove_het_samples.txt&quot;, row.names=FALSE)</code></pre>
+<ol start="5" style="list-style-type: decimal">
+<li>Remove SNPs and samples with &lt;98% missingness and SNPs that deviate from the HWE (pval&lt;0.0001). Also exclude those hh samples:</li>
+</ol>
+<pre><code>--bfile snps_1_22_miss_het
+--geno 0.02   
+--mind 0.02  
+--hwe 0.0001 
+--remove remove_het_samples.txt
+--make-bed  --out snps_1_22_temp_qc</code></pre>
+<ol start="6" style="list-style-type: decimal">
+<li>Calculate IBD values to check sample relatedness. This step can also be done with <a href="http://www.kingrelatedness.com/">KING</a>.</li>
+</ol>
+</div>

@@ -1,0 +1,7 @@
+---
+title: "GWAS overview"
+---
+
+
+A Genome-Wide Association Study tests the association of every SNP with a phenotype. This is done by fitting a regression model for each of them, usually a logistic (case/control phenotype) or a linear model (linear phenotype), and adjusting for meaningful covariables. Due to LD-structure, if a certain genome region is associated to a phenotype, we will see more than one associated SNPs (those are the buildings in the Manhattan Plot!). However, as we are testing multiple hypotheses at the same time ($\beta_{SNP}=0$)
+Let's get started! 
